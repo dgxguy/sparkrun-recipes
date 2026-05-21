@@ -18,18 +18,23 @@ RUN git clone --depth 1 --branch master https://github.com/ggerganov/llama.cpp.g
     make -j $(nproc) llama-server
 
 # Runtime
-FROM nvidia/cuda:13.0.0-runtime-ubuntu22.04 AS runtime
+FROM ubuntu:22.04 AS runtime
 
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && apt-get install -y \
-    libstdc++6 libgomp1 \
+    libstdc++6 \
+    libgomp1 \
     && rm -rf /var/lib/apt/lists/*
+
+# Copy CUDA libs from build stage
+COPY --from=build /usr/local/cuda-13.0/lib64/ /usr/local/cuda-13.0/lib64/
+COPY --from=build /usr/local/cuda-13.0/targets/ /usr/local/cuda-13.0/targets/
 
 # Copy server binary
 COPY --from=build /llama.cpp/build/bin/llama-server /usr/local/bin/llama-server
 
 # CUDA runtime libs (needed for CUDA 13)
-ENV LD_LIBRARY_PATH=/usr/local/cuda-13.0/lib64:$LD_LIBRARY_PATH
+ENV LD_LIBRARY_PATH=/usr/local/cuda-13.0/lib64:/usr/local/cuda-13.0/targets/sbsa-linux/lib:$LD_LIBRARY_PATH
 
 ENTRYPOINT ["llama-server"]
 CMD ["--help"]

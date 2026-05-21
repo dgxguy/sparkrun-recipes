@@ -1,0 +1,6 @@
+name: dgxguy
+prefix: dgxguy
+recipes_subpath: recipes
+mods_subpath: mods
+visible: true
+description: Optimized llama.cpp recipes for DGX Spark (Blackwell/GB10) — MTP, quantized, and tuned for native multi-token prediction.

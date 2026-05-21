@@ -22,7 +22,7 @@ FROM nvidia/cuda:13.0.0-runtime-ubuntu22.04 AS runtime
 
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && apt-get install -y \
-    libstdc++6 \
+    libstdc++6 libgomp1 \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy server binary

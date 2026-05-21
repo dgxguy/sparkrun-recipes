@@ -1,0 +1,35 @@
+FROM nvcr.io/nvidia/cuda:13.0.0-devel-ubuntu22.04 AS build
+
+# CUDA 13.0.0 already installed in base image
+
+# Install build deps
+RUN apt-get update && apt-get install -y \
+    git cmake \
+    && rm -rf /var/lib/apt/lists/*
+
+# Clone and build llama.cpp with MTP support
+RUN git clone --depth 1 --branch master https://github.com/ggerganov/llama.cpp.git /llama.cpp && \
+    mkdir -p /llama.cpp/build && \
+    cd /llama.cpp/build && \
+    cmake .. \
+        -DBUILD_SHARED_LIBS=OFF \
+        -DCMAKE_CUDA_ARCHITECTURES="1210;1220" \
+        -DCMAKE_BUILD_TYPE=Release && \
+    make -j $(nproc) llama-server
+
+# Runtime
+FROM nvidia/cuda:13.0.0-runtime-ubuntu22.04 AS runtime
+
+ENV DEBIAN_FRONTEND=noninteractive
+RUN apt-get update && apt-get install -y \
+    libstdc++6 \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy server binary
+COPY --from=build /llama.cpp/build/bin/llama-server /usr/local/bin/llama-server
+
+# CUDA runtime libs (needed for CUDA 13)
+ENV LD_LIBRARY_PATH=/usr/local/cuda-13.0/lib64:$LD_LIBRARY_PATH
+
+ENTRYPOINT ["llama-server"]
+CMD ["--help"]

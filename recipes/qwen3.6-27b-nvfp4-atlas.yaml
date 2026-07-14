@@ -1,0 +1,33 @@
+# Recipe: nvidia/Qwen3.6-27B-NVFP4 with MTP speculative decoding
+# NVFP4 quantized (NVIDIA ModelOpt) — dense model with Hybrid Attention
+# KV cache dtype: bf16 (dense models — FP8/NVFP4 KV breaks dense attention on Atlas)
+
+recipe_version: "2"
+model: nvidia/Qwen3.6-27B-NVFP4
+runtime: atlas
+container: avarok/atlas-gb10:latest
+max_nodes: 1
+
+metadata:
+  description: |
+    NVIDIA Qwen3.6-27B-NVFP4 with MTP (K=3) speculative decoding on the Atlas runtime.
+    NVFP4 quantized via nvidia-modelopt — 2.5x memory reduction vs FP16.
+    Dense model with Hybrid Attention (Gated DeltaNet + Gated Attention).
+    KV cache stays BF16 (FP8/NVFP4 KV breaks dense attention on Atlas).
+  maintainer: sparky1
+  category: nvfp4
+  model_params: 27B
+  model_dtype: nvfp4
+  quantization: nvfp4
+  kv_dtype: bf16
+
+defaults:
+  port: 8888
+  host: 0.0.0.0
+  max_model_len: 60000
+  kv_cache_dtype: bf16
+  gpu_memory_utilization: 0.88
+  scheduling_policy: slai
+  speculative: true
+  mtp_quantization: bf16
+  enable_prefix_caching: true

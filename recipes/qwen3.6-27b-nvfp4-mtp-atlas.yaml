@@ -1,0 +1,37 @@
+# Recipe: sakamakismile/Qwen3.6-27B-Text-NVFP4-MTP
+# NVFP4 quantized with MTP draft head grafted back in BF16 (~850 MB, 15 tensors)
+# This is the community MTP variant — the base nvidia/ checkpoint drops MTP heads
+# Source: https://huggingface.co/sakamakismile/Qwen3.6-27B-Text-NVFP4-MTP
+# Confirmed working on vLLM 0.19.0+nv26.04, 72% draft acceptance on GB10
+
+recipe_version: "2"
+model: sakamakismile/Qwen3.6-27B-Text-NVFP4-MTP
+runtime: atlas
+container: avarok/atlas-gb10:latest
+max_nodes: 1
+
+metadata:
+  description: |
+    NVIDIA Qwen3.6-27B-NVFP4 with MTP draft head grafted back in BF16 for
+    speculative decoding on the Atlas runtime. The base nvidia/ checkpoint
+    drops MTP heads during quantization export — this community variant
+    restores them (~850 MB, 15 tensors) specifically for vLLM.
+    Dense model, Hybrid Attention, BF16 KV cache.
+    Confirmed: 72% draft acceptance, ~19 tok/s decode on GB10.
+  maintainer: sparky1
+  category: nvfp4
+  model_params: 27B
+  model_dtype: nvfp4
+  quantization: nvfp4
+  kv_dtype: bf16
+
+defaults:
+  port: 8888
+  host: 0.0.0.0
+  max_model_len: 60000
+  kv_cache_dtype: bf16
+  gpu_memory_utilization: 0.88
+  scheduling_policy: slai
+  speculative: true
+  mtp_quantization: bf16
+  enable_prefix_caching: true

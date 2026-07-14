@@ -40,7 +40,7 @@ defaults:
   max_model_len: 262144
   max_num_batched_tokens: 32768
   load_format: fastsafetensors
-  kv_cache_dtype: bf16
+  kv_cache_dtype: bfloat16
   attention_backend: flashinfer
   tool_call_parser: qwen3_coder
   reasoning_parser: qwen3

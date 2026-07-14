@@ -1,0 +1,72 @@
+# Recipe: nvidia/Qwen3.6-27B-NVFP4 with MTP speculative decoding
+# NVFP4 quantized (NVIDIA ModelOpt) — dense model with Hybrid Attention
+# KV cache dtype: bf16 (dense models — FP8/NVFP4 KV breaks dense attention)
+# Uses vLLM nightly with modelopt quantization support
+#
+# NOTE: The base nvidia/ checkpoint drops MTP draft heads during NVFP4
+# quantization export. For working MTP, use the community variant:
+#   sakamakismile/Qwen3.6-27B-Text-NVFP4-MTP
+# which ships the MTP head grafted back in BF16 (~850 MB, 15 tensors)
+# Confirmed: 72% draft acceptance on vLLM 0.19.0+nv26.04
+
+recipe_version: "2"
+model: nvidia/Qwen3.6-27B-NVFP4
+runtime: vllm
+container: ghcr.io/spark-arena/dgx-vllm-eugr-nightly:latest
+
+metadata:
+  description: |
+    NVIDIA Qwen3.6-27B-NVFP4 with MTP speculative decoding on vLLM.
+    Dense model, Hybrid Attention, BF16 KV cache.
+    The base nvidia/ checkpoint may drop MTP heads — if so, switch to
+    sakamakismile/Qwen3.6-27B-Text-NVFP4-MTP (community MTP variant).
+  maintainer: sparky1
+  category: nvfp4
+  model_params: 27B
+  model_dtype: nvfp4
+  kv_dtype: bf16
+  attention_type: dense
+
+mods:
+  - mods/fix-qwen3-coder-next
+  - mods/fix-qwen3.5-chat-template
+
+defaults:
+  port: 8000
+  host: 0.0.0.0
+  tensor_parallel: 1
+  pipeline_parallel: 1
+  gpu_memory_utilization: 0.8
+  max_model_len: 262144
+  max_num_batched_tokens: 32768
+  load_format: fastsafetensors
+  kv_cache_dtype: bf16
+  attention_backend: flashinfer
+  tool_call_parser: qwen3_coder
+  reasoning_parser: qwen3
+  quantization: modelopt
+  speculative_config: '{"method": "mtp", "num_speculative_tokens": 2}'
+
+env:
+  VLLM_MARLIN_USE_ATOMIC_ADD: "1"
+
+command: |
+  vllm serve {model} \
+    --host {host} \
+    --port {port} \
+    --max-model-len {max_model_len} \
+    --max-num-batched-tokens {max_num_batched_tokens} \
+    --trust-remote-code \
+    --chat-template unsloth.jinja \
+    --gpu-memory-utilization {gpu_memory_utilization} \
+    --enable-auto-tool-choice \
+    --tool-call-parser {tool_call_parser} \
+    --reasoning-parser {reasoning_parser} \
+    --kv-cache-dtype {kv_cache_dtype} \
+    --load-format {load_format} \
+    --attention-backend {attention_backend} \
+    --quantization {quantization} \
+    --speculative-config '{speculative_config}' \
+    --enable-prefix-caching \
+    -tp {tensor_parallel} \
+    -pp {pipeline_parallel}
